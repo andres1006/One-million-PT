@@ -57,7 +57,10 @@ export const useLeadsFilters = create<LeadsFiltersState>((set, get) => ({
       source: parseSource(sp.get("source")),
       from: sp.get("from"),
       to: sp.get("to"),
-      page: Number.isFinite(pageNum) && pageNum > 0 ? pageNum : 1,
+      // Floor to an integer so `?page=2.5` doesn't slide the pagination
+      // slice to `start=15` (between page 2 and 3 boundaries).
+      page:
+        Number.isFinite(pageNum) && pageNum > 0 ? Math.floor(pageNum) : 1,
       sort:
         sp.get("sort") === "fecha_asc"
           ? "fecha_asc"
