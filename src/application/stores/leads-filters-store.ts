@@ -3,7 +3,15 @@
 import { create } from "zustand";
 
 import type { LeadFilters, LeadSource } from "@/domain/lead";
+import { LEAD_SOURCES } from "@/domain/lead";
 import { DEFAULT_PAGE_SIZE } from "@/lib/constants";
+
+function parseSource(value: string | null): LeadSource | "all" {
+  if (!value) return "all";
+  return (LEAD_SOURCES as readonly string[]).includes(value)
+    ? (value as LeadSource)
+    : "all";
+}
 
 interface LeadsFiltersState {
   q: string;
@@ -46,7 +54,7 @@ export const useLeadsFilters = create<LeadsFiltersState>((set, get) => ({
     const pageNum = Number(sp.get("page") ?? 1);
     set({
       q: sp.get("q") ?? "",
-      source: (sp.get("source") as LeadSource | null) ?? "all",
+      source: parseSource(sp.get("source")),
       from: sp.get("from"),
       to: sp.get("to"),
       page: Number.isFinite(pageNum) && pageNum > 0 ? pageNum : 1,
