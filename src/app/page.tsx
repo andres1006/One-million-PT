@@ -1,65 +1,94 @@
-import Image from "next/image";
+import Link from "next/link";
+import { ArrowRight, Sparkles, Users, LineChart } from "lucide-react";
 
-export default function Home() {
+import { AppShell } from "@/components/layout/app-shell";
+import { buttonVariants } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+
+const FEATURES = [
+  {
+    icon: Users,
+    title: "Gestión de leads",
+    description:
+      "CRUD completo con filtros, búsqueda y paginación sobre la tabla.",
+    href: "/leads",
+  },
+  {
+    icon: LineChart,
+    title: "Dashboard",
+    description:
+      "Métricas clave: total, promedio de presupuesto, últimos 7 días, fuente top.",
+    href: "/",
+  },
+  {
+    icon: Sparkles,
+    title: "Resumen con IA",
+    description:
+      "Genera un análisis ejecutivo con recomendaciones accionables.",
+    href: "/ai-summary",
+  },
+] as const;
+
+export default function HomePage() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <AppShell title="Dashboard">
+      <div className="mx-auto flex max-w-5xl flex-col gap-10">
+        <section className="flex flex-col gap-3">
+          <span className="w-fit rounded-full border px-3 py-1 font-mono text-xs text-muted-foreground">
+            Fase 0 · scaffold listo
+          </span>
+          <h2 className="text-3xl font-semibold tracking-tight">
+            Panel de leads de One Million Copy
+          </h2>
+          <p className="max-w-2xl text-muted-foreground">
+            Interfaz 100% frontend para visualizar, filtrar y gestionar los
+            leads provenientes de los embudos de marketing. Esta pantalla se
+            reemplazará en la Fase 4 por el dashboard con métricas reales.
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+          <div className="flex gap-3">
+            <Link href="/leads" className={cn(buttonVariants())}>
+              Ver leads <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+            <Link
+              href="/ai-summary"
+              className={cn(buttonVariants({ variant: "outline" }))}
+            >
+              Resumen con IA
+            </Link>
+          </div>
+        </section>
+
+        <section className="grid gap-4 md:grid-cols-3">
+          {FEATURES.map(({ icon: Icon, title, description, href }) => (
+            <Card key={title}>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <span className="grid h-8 w-8 place-items-center rounded-md bg-muted">
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  <CardTitle className="text-base">{title}</CardTitle>
+                </div>
+                <CardDescription>{description}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Link
+                  href={href}
+                  className="text-sm font-medium underline-offset-4 hover:underline"
+                >
+                  Abrir
+                </Link>
+              </CardContent>
+            </Card>
+          ))}
+        </section>
+      </div>
+    </AppShell>
   );
 }
