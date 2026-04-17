@@ -104,6 +104,34 @@ describe("callOpenAi", () => {
     expect(outcome.status).toBe("invalid_response");
   });
 
+  it("accepts response with topSource omitted (regression: Devin Review PR #8)", async () => {
+    process.env.OPENAI_API_KEY = "sk-test";
+    fetchSpy.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  headline: "Resumen sin topSource",
+                  analysis: "El modelo omitió el campo topSource.",
+                  recommendations: ["Hacer algo", "Hacer algo más"],
+                }),
+              },
+            },
+          ],
+        }),
+        { status: 200 },
+      ),
+    );
+
+    const outcome = await callOpenAi({ dataset, filters });
+    expect(outcome.status).toBe("ok");
+    if (outcome.status === "ok") {
+      expect(outcome.parsed.topSource ?? null).toBeNull();
+    }
+  });
+
   it("returns invalid_response when JSON is missing required keys", async () => {
     process.env.OPENAI_API_KEY = "sk-test";
     fetchSpy.mockResolvedValueOnce(

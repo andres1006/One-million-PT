@@ -9,7 +9,8 @@ import type { AiSummaryDataset } from "@/domain/ai";
 export interface OpenAiParsedSummary {
   headline: string;
   analysis: string;
-  topSource: string | null;
+  /** Optional on the wire; `coerceTopSource` maps missing/unknown → `null`. */
+  topSource?: string | null;
   recommendations: string[];
 }
 
@@ -47,10 +48,14 @@ function buildPrompt(input: CallInput): string {
 function isParsedShapeValid(value: unknown): value is OpenAiParsedSummary {
   if (!value || typeof value !== "object") return false;
   const v = value as Record<string, unknown>;
+  // `topSource` is optional on the wire — the previous implementation
+  // didn't validate it at all and relied on `coerceTopSource` to map
+  // missing/invalid values to `null`. We keep that tolerance by also
+  // accepting `undefined` (omitted key) here.
   return (
     typeof v.headline === "string" &&
     typeof v.analysis === "string" &&
-    (v.topSource === null || typeof v.topSource === "string") &&
+    (v.topSource == null || typeof v.topSource === "string") &&
     Array.isArray(v.recommendations)
   );
 }
