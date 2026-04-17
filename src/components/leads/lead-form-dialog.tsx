@@ -9,6 +9,7 @@ import type { Lead, LeadSource } from "@/domain/lead";
 import { LEAD_SOURCES, LEAD_SOURCE_LABEL } from "@/domain/lead";
 import {
   leadCreateSchema,
+  type LeadCreateFormValues,
   type LeadCreateInput,
 } from "@/domain/lead.schema";
 import {
@@ -51,7 +52,7 @@ interface Props {
   mode: Mode;
 }
 
-function leadToDefaults(lead?: Lead): LeadCreateInput {
+function leadToDefaults(lead?: Lead): LeadCreateFormValues {
   return {
     nombre: lead?.nombre ?? "",
     email: lead?.email ?? "",
@@ -66,7 +67,11 @@ export function LeadFormDialog({ open, onOpenChange, mode }: Props) {
   const createMut = useCreateLead();
   const updateMut = useUpdateLead();
 
-  const form = useForm<LeadCreateInput>({
+  // `LeadCreateFormValues` carries the raw (pre-transform) shape used by the
+  // inputs; the third generic is the transformed output that `handleSubmit`
+  // passes to the mutation — enforcing at compile time that only validated,
+  // coerced data reaches the repository.
+  const form = useForm<LeadCreateFormValues, unknown, LeadCreateInput>({
     resolver: zodResolver(leadCreateSchema),
     defaultValues: leadToDefaults(
       mode.kind === "edit" ? mode.lead : undefined,
