@@ -7,8 +7,15 @@ import { WEBHOOK_EVENTS } from "./webhook";
  *
  * Shared between React Hook Form (client) and the Next.js route handlers
  * (server) so we have a single source of truth.
+ *
+ * NOTE: `enabled` is intentionally split between the create and update
+ * schemas. On create we want `.default(true)` so a new webhook is active
+ * unless opted-out. On update we must NOT carry that default — in Zod v4
+ * defaults still fire after `.partial()`, so a PATCH that simply omits
+ * `enabled` (e.g. renaming a paused webhook) would silently re-enable it.
+ * See Devin Review comment on PR #12.
  */
-export const webhookCreateSchema = z.object({
+const webhookBaseSchema = z.object({
   name: z
     .string()
     .trim()
@@ -22,7 +29,6 @@ export const webhookCreateSchema = z.object({
   events: z
     .array(z.enum(WEBHOOK_EVENTS))
     .min(1, "Selecciona al menos un evento"),
-  enabled: z.boolean().optional().default(true),
   secret: z
     .string()
     .trim()
@@ -31,10 +37,18 @@ export const webhookCreateSchema = z.object({
     .transform((v) => (v === "" ? undefined : v)),
 });
 
+export const webhookCreateSchema = webhookBaseSchema.extend({
+  enabled: z.boolean().optional().default(true),
+});
+
 export type WebhookCreateFormValues = z.input<typeof webhookCreateSchema>;
 export type WebhookCreateInput = z.output<typeof webhookCreateSchema>;
 
-export const webhookUpdateSchema = webhookCreateSchema.partial();
+export const webhookUpdateSchema = webhookBaseSchema
+  .extend({
+    enabled: z.boolean().optional(),
+  })
+  .partial();
 export type WebhookUpdateInput = z.output<typeof webhookUpdateSchema>;
 
 /**
