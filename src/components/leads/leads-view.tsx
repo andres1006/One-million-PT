@@ -14,9 +14,7 @@ import { LeadFormDialog } from "./lead-form-dialog";
 import { LeadDetailSheet } from "./lead-detail-sheet";
 import { DeleteLeadDialog } from "./delete-lead-dialog";
 
-type FormState =
-  | { open: false }
-  | { open: true; mode: { kind: "create" } | { kind: "edit"; lead: Lead } };
+type FormMode = { kind: "create" } | { kind: "edit"; lead: Lead };
 
 export function LeadsView() {
   const router = useRouter();
@@ -59,26 +57,36 @@ export function LeadsView() {
 
   const query = useLeadsList(filters.toQueryFilters());
 
-  const [formState, setFormState] = useState<FormState>({ open: false });
+  // Keep form/sheet/delete dialogs mounted at all times and drive visibility
+  // purely via their `open` prop. This lets them play their close animations
+  // instead of being ripped out of the tree synchronously.
+  const [formOpen, setFormOpen] = useState(false);
+  const [formMode, setFormMode] = useState<FormMode>({ kind: "create" });
   const [detailId, setDetailId] = useState<string | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Lead | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const onView = (lead: Lead) => {
     setDetailId(lead.id);
     setDetailOpen(true);
   };
-  const onEdit = (lead: Lead) =>
-    setFormState({ open: true, mode: { kind: "edit", lead } });
-  const onDelete = (lead: Lead) => setDeleteTarget(lead);
+  const onEdit = (lead: Lead) => {
+    setFormMode({ kind: "edit", lead });
+    setFormOpen(true);
+  };
+  const onDelete = (lead: Lead) => {
+    setDeleteTarget(lead);
+    setDeleteOpen(true);
+  };
+  const onCreate = () => {
+    setFormMode({ kind: "create" });
+    setFormOpen(true);
+  };
 
   return (
     <div className="flex flex-col gap-4">
-      <LeadFiltersBar
-        onCreate={() =>
-          setFormState({ open: true, mode: { kind: "create" } })
-        }
-      />
+      <LeadFiltersBar onCreate={onCreate} />
 
       <LeadsTable
         data={query.data}
@@ -91,15 +99,11 @@ export function LeadsView() {
 
       <LeadsPagination total={query.data?.total} />
 
-      {formState.open && (
-        <LeadFormDialog
-          open={formState.open}
-          onOpenChange={(open) =>
-            setFormState(open ? formState : { open: false })
-          }
-          mode={formState.mode}
-        />
-      )}
+      <LeadFormDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        mode={formMode}
+      />
 
       <LeadDetailSheet
         leadId={detailId}
@@ -109,8 +113,8 @@ export function LeadsView() {
 
       <DeleteLeadDialog
         lead={deleteTarget}
-        open={Boolean(deleteTarget)}
-        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
       />
     </div>
   );
