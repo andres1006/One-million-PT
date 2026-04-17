@@ -15,7 +15,7 @@ Aplicación web **100% frontend** para administrar leads de **One Million Copy S
 | Formularios | React Hook Form + Zod |
 | Mocks | MSW (service worker en navegador) |
 | Gráficas | Recharts (AreaChart y BarChart) |
-| Tests | Vitest + Testing Library + jsdom (44 tests) |
+| Tests | Vitest + Testing Library + jsdom (50 tests) |
 | Linting | ESLint (config de Next) + Prettier + commitlint + husky |
 | Deploy | Vercel (estático + route `/api/ai-summary`) |
 
@@ -106,7 +106,7 @@ pnpm format:check   # Prettier (check)
 
 ## 🧪 Testing
 
-Se usa **Vitest + Testing Library + jsdom**. 44 tests repartidos en 8 suites cubren las piezas críticas:
+Se usa **Vitest + Testing Library + jsdom**. 50 tests repartidos en 9 suites cubren las piezas críticas:
 
 | Suite | Qué prueba |
 |---|---|
@@ -118,6 +118,7 @@ Se usa **Vitest + Testing Library + jsdom**. 44 tests repartidos en 8 suites cub
 | `application/stores/ai-history-store.test.ts` | Orden descendente, cap en `AI_SUMMARY_HISTORY_LIMIT`, `clear()`. |
 | `components/leads/source-badge.test.tsx` | Labels localizados (Instagram, Landing Page, Referido). |
 | `components/dashboard/kpi-card.test.tsx` | Render de label/value/hint, delta positivo / negativo con `aria-label`, estado `isLoading`. |
+| `infrastructure/ai/openai-client.test.ts` | Rutas de salida del cliente OpenAI: `no_key`, `ok`, `http_error` (401/429 con mensaje), `invalid_response` (JSON malformado / schema incompleto), `network_error` (fetch tirado). |
 
 Corre todo con:
 
@@ -146,16 +147,28 @@ Para desactivar MSW: `NEXT_PUBLIC_MOCKS=off`.
 
 La página `/ai-summary` permite generar un resumen ejecutivo en español en ~2 segundos.
 
-Flujo:
+### Flujo
 
 1. El cliente construye un `AiSummaryDataset` **puro** (agregados por fuente, WoW, top productos, promedio de presupuesto…) vía `buildAiDataset`.
 2. Envía dataset + filtros a `POST /api/ai-summary`.
 3. El route handler:
-   - Si existe `OPENAI_API_KEY` → llama `gpt-4o-mini` (configurable con `OPENAI_MODEL`) con `response_format: json_object` y valida la respuesta. Si el modelo alucina un `topSource` no válido, cae a `null`.
-   - Si no hay key, o OpenAI falla (red / 429 / JSON inválido) → usa `generateHeuristicSummary`, determinístico y siempre disponible.
-4. La respuesta se guarda en `localStorage` (últimos 5) y se muestra con badge indicando el proveedor (`OpenAI` vs `Heurístico`).
+   - Si existe `OPENAI_API_KEY` → llama a `gpt-4o-mini` (configurable con `OPENAI_MODEL`) con `response_format: json_object` y valida la respuesta. Si el modelo alucina un `topSource` no válido, cae a `null`.
+   - Si no hay key, o OpenAI falla (401, 429, red caída, JSON inválido) → usa `generateHeuristicSummary`, determinístico y siempre disponible.
+4. Cuando hay un **fallback por error** (key presente pero call falló), la respuesta incluye un `warning` que el UI renderiza como banner ámbar dentro de la tarjeta. Además se deja un `console.warn` en los logs del servidor con el detalle (`Vercel → Function Logs`).
+5. La respuesta se guarda en `localStorage` (últimos 5) y se muestra con badge indicando el proveedor (`OpenAI` vs `Heurístico`).
 
 La clave del diseño es que **el producto nunca bloquea al usuario**: el fallback heurístico entrega un resumen válido en todos los escenarios.
+
+### Activar OpenAI en Vercel (paso a paso)
+
+El heurístico es el modo por defecto y no requiere configuración. Para activar el modelo real en la URL pública:
+
+1. **Crea la API key**: <https://platform.openai.com/api-keys> → "Create new secret key". Necesitas billing activo en tu cuenta de OpenAI.
+2. **Agrega la env var en Vercel**: dashboard → proyecto `one-million-pt` → **Settings → Environment Variables** → `OPENAI_API_KEY` = `sk-...`, scope **Production** (y opcionalmente Preview). Opcional: `OPENAI_MODEL` si quieres otro modelo (default `gpt-4o-mini`).
+3. **Redeploy**: en **Deployments**, clic en el último deploy → **Redeploy** (puedes mantener el build cache).
+4. **Verifica**: visita `/ai-summary` → "Generar resumen" → el badge cambia de `Heurístico` a `OpenAI`. Si aparece un banner ámbar "Fallback al modo heurístico" significa que la llamada a OpenAI falló — revisa los **Function Logs** de Vercel para el detalle exacto (key inválida, sin billing, rate limit, JSON mal formado, etc.).
+
+> Costos estimados: ~500 tokens por clic con `gpt-4o-mini` ≈ **< $0.001 USD** por resumen. El heurístico queda como safety net si hay un outage.
 
 ## 🔐 Variables de entorno
 
