@@ -29,12 +29,17 @@ const INITIAL_FILTERS: AiSummaryFilters = {
   to: null,
 };
 
-const BULK_PAGE_SIZE = 500;
+// Upper bound on how many leads we pull in a single request to compute the
+// dataset on the client. The seed is ~16 leads and real traffic for this
+// product is very unlikely to exceed this; if it ever does we explicitly
+// warn the user instead of silently truncating.
+const BULK_PAGE_SIZE = 1000;
 
 export function AiSummaryView() {
-  // Pull *all* leads so the dataset is computed on the full population for
-  // the selected filters — the server route doesn't need raw leads, we just
-  // pass the aggregated dataset.
+  // Pull leads so the dataset is computed on the full population for the
+  // selected filters — the server route doesn't need raw leads, we just
+  // pass the aggregated dataset. If `total > data.length` we surface a
+  // warning banner so the user knows the summary is partial.
   const leadsQ = useLeadsList({ page: 1, pageSize: BULK_PAGE_SIZE });
   const generate = useGenerateAiSummary();
   const history = useAiHistory((s) => s.history);
@@ -45,6 +50,8 @@ export function AiSummaryView() {
   const [current, setCurrent] = useState<AiSummary | null>(null);
 
   const leads = useMemo(() => leadsQ.data?.data ?? [], [leadsQ.data]);
+  const totalLeads = leadsQ.data?.total ?? leads.length;
+  const isTruncated = totalLeads > leads.length;
 
   const dataset = useMemo(
     () => buildAiDataset(leads, filters),
@@ -97,6 +104,21 @@ export function AiSummaryView() {
         onGenerate={onGenerate}
         isGenerating={generate.isPending || leadsQ.isLoading}
       />
+
+      {isTruncated && (
+        <div
+          role="alert"
+          className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300"
+        >
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <div>
+            El dataset del resumen está computado sobre los{" "}
+            <strong>{leads.length}</strong> leads más recientes (de un total de{" "}
+            <strong>{totalLeads}</strong>). Para análisis sobre toda la base,
+            acota el rango de fechas o la fuente.
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-3">
         <section
