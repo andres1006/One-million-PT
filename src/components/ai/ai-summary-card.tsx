@@ -1,6 +1,12 @@
 "use client";
 
-import { Sparkles, BrainCircuit, Target, Lightbulb } from "lucide-react";
+import {
+  Sparkles,
+  BrainCircuit,
+  Target,
+  Lightbulb,
+  AlertTriangle,
+} from "lucide-react";
 
 import type { AiSummary } from "@/domain/ai";
 import { LEAD_SOURCE_LABEL } from "@/domain/lead";
@@ -36,6 +42,15 @@ export function AiSummaryCard({ summary }: Props) {
         </Badge>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
+        {summary.warning && (
+          <div
+            role="alert"
+            className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200"
+          >
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span className="leading-relaxed">{summary.warning}</span>
+          </div>
+        )}
         <section>
           <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Análisis

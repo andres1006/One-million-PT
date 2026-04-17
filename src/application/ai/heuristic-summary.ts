@@ -69,6 +69,7 @@ export function generateHeuristicSummary(
   dataset: AiSummaryDataset,
   filters: AiSummaryFilters,
   now: Date = new Date(),
+  warning?: string,
 ): AiSummary {
   const topSource = pickTopSource(dataset.bySource);
   const scope = buildFilterScope(filters);
@@ -162,5 +163,6 @@ export function generateHeuristicSummary(
     analysis,
     topSource,
     recommendations,
+    ...(warning ? { warning } : {}),
   };
 }
