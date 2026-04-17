@@ -11,9 +11,12 @@ interface Props {
 
 export function LeadsPagination({ total }: Props) {
   const { page, pageSize, setPage } = useLeadsFilters();
-  const totalPages = Math.max(1, Math.ceil((total ?? 0) / pageSize));
-  const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
-  const to = Math.min(page * pageSize, total ?? 0);
+  const safeTotal = total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(safeTotal / pageSize));
+  // When there's nothing to show (loading or empty) the range collapses to 0–0
+  // instead of the misleading "1–0" we produced before.
+  const from = safeTotal === 0 ? 0 : (page - 1) * pageSize + 1;
+  const to = Math.min(page * pageSize, safeTotal);
 
   return (
     <div className="flex items-center justify-between text-xs text-muted-foreground">
