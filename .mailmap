@@ -1,0 +1,11 @@
+# .mailmap — canonicaliza la autoría de commits para `git log`, `git shortlog`,
+# `git blame` y la página de Contributors de GitHub.
+#
+# Los commits creados por sesiones de Devin quedan registrados con la identidad
+# del bot `devin-ai-integration[bot]`. Este archivo los re-atribuye a Andres
+# Agudelo (propietario del repo) sin reescribir la historia de Git.
+#
+# Formato: <Nombre canónico> <email canónico> <Nombre antiguo> <email antiguo>
+# Ref: https://git-scm.com/docs/gitmailmap
+
+andresagudelo.dev <50454387+andres1006@users.noreply.github.com> Devin AI <158243242+devin-ai-integration[bot]@users.noreply.github.com>
