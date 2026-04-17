@@ -48,19 +48,24 @@ export function KpiCard({
         : Minus;
 
   return (
-    <Card className="shadow-xs">
+    <Card className="group relative overflow-hidden border-border/60 bg-card/70 backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:shadow-lg hover:ring-1 hover:ring-primary/30">
+      {/* Hair-line accent on top edge for a futuristic feel. */}
+      <span
+        aria-hidden
+        className="accent-gradient absolute inset-x-0 top-0 h-px opacity-80"
+      />
       <CardHeader className="flex-row items-center justify-between gap-2 space-y-0 pb-2">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
           {label}
         </p>
-        <span className="grid h-8 w-8 place-items-center rounded-md bg-muted text-muted-foreground">
+        <span className="accent-gradient grid h-9 w-9 place-items-center rounded-xl text-white shadow-sm ring-1 ring-white/20">
           <Icon className="h-4 w-4" />
         </span>
       </CardHeader>
       <CardContent className="flex flex-col gap-1">
         <p
           className={cn(
-            "text-2xl font-semibold tracking-tight tabular-nums",
+            "font-heading text-3xl font-bold tracking-tight tabular-nums",
             isLoading && "animate-pulse text-muted-foreground/40",
           )}
         >
