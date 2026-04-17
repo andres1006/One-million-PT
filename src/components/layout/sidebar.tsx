@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   Sparkles,
   Users,
+  Webhook,
   type LucideIcon,
 } from "lucide-react";
 
@@ -25,6 +26,7 @@ const NAV: readonly NavItem[] = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/leads", label: "Leads", icon: Users },
   { href: "/ai-summary", label: "Resumen IA", icon: Sparkles },
+  { href: "/automations", label: "Automatizaciones", icon: Webhook },
 ] as const;
 
 export function Sidebar() {

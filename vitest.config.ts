@@ -10,6 +10,9 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(rootDir, "./src"),
+      // `server-only` is a runtime guard Next.js ships; it has no real code
+      // and isn't published to npm, so we stub it for the test runner.
+      "server-only": path.resolve(rootDir, "./src/test/stubs/server-only.ts"),
     },
   },
   test: {
