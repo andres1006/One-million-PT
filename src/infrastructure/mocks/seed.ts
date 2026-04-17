@@ -1,0 +1,166 @@
+import type { Lead } from "@/domain/lead";
+
+const daysAgo = (d: number) => {
+  const date = new Date();
+  date.setDate(date.getDate() - d);
+  date.setHours(10 + (d % 8), (d * 7) % 60, 0, 0);
+  return date.toISOString();
+};
+
+/**
+ * Seed used to bootstrap the mock API and localStorage repository.
+ * ≥ 15 leads to comfortably satisfy the "mínimo 10" requirement and
+ * exercise pagination with at least 2 pages.
+ */
+export const LEADS_SEED: Lead[] = [
+  {
+    id: "ld_001",
+    nombre: "María González",
+    email: "maria.gonzalez@example.com",
+    telefono: "+57 300 111 2233",
+    fuente: "instagram",
+    producto_interes: "Curso de Copywriting",
+    presupuesto: 450,
+    fecha_creacion: daysAgo(0),
+  },
+  {
+    id: "ld_002",
+    nombre: "Carlos Ramírez",
+    email: "carlos.ramirez@example.com",
+    telefono: "+57 311 222 3344",
+    fuente: "facebook",
+    producto_interes: "Mentoría 1:1",
+    presupuesto: 1200,
+    fecha_creacion: daysAgo(1),
+  },
+  {
+    id: "ld_003",
+    nombre: "Laura Pérez",
+    email: "laura.perez@example.com",
+    fuente: "landing_page",
+    producto_interes: "Plantillas premium",
+    presupuesto: 80,
+    fecha_creacion: daysAgo(2),
+  },
+  {
+    id: "ld_004",
+    nombre: "Juan Esteban Ruiz",
+    email: "juan.ruiz@example.com",
+    telefono: "+57 320 444 5566",
+    fuente: "referido",
+    producto_interes: "Consultoría de marca",
+    presupuesto: 2500,
+    fecha_creacion: daysAgo(3),
+  },
+  {
+    id: "ld_005",
+    nombre: "Sofía Martínez",
+    email: "sofia.martinez@example.com",
+    fuente: "instagram",
+    presupuesto: 0,
+    fecha_creacion: daysAgo(4),
+  },
+  {
+    id: "ld_006",
+    nombre: "Andrés Felipe Gómez",
+    email: "andres.gomez@example.com",
+    telefono: "+57 301 777 8899",
+    fuente: "otro",
+    producto_interes: "Webinar de ventas",
+    fecha_creacion: daysAgo(5),
+  },
+  {
+    id: "ld_007",
+    nombre: "Valentina Torres",
+    email: "valentina.torres@example.com",
+    telefono: "+57 315 555 4433",
+    fuente: "landing_page",
+    producto_interes: "Curso de Copywriting",
+    presupuesto: 350,
+    fecha_creacion: daysAgo(6),
+  },
+  {
+    id: "ld_008",
+    nombre: "Diego Alejandro Mora",
+    email: "diego.mora@example.com",
+    fuente: "facebook",
+    producto_interes: "Mentoría 1:1",
+    presupuesto: 1800,
+    fecha_creacion: daysAgo(8),
+  },
+  {
+    id: "ld_009",
+    nombre: "Camila Restrepo",
+    email: "camila.restrepo@example.com",
+    telefono: "+57 318 999 0011",
+    fuente: "instagram",
+    producto_interes: "Plantillas premium",
+    presupuesto: 120,
+    fecha_creacion: daysAgo(10),
+  },
+  {
+    id: "ld_010",
+    nombre: "Felipe Cárdenas",
+    email: "felipe.cardenas@example.com",
+    fuente: "referido",
+    producto_interes: "Consultoría de marca",
+    presupuesto: 3200,
+    fecha_creacion: daysAgo(12),
+  },
+  {
+    id: "ld_011",
+    nombre: "Natalia Quintero",
+    email: "natalia.quintero@example.com",
+    telefono: "+57 322 123 4567",
+    fuente: "instagram",
+    producto_interes: "Curso de Copywriting",
+    presupuesto: 500,
+    fecha_creacion: daysAgo(15),
+  },
+  {
+    id: "ld_012",
+    nombre: "Ricardo Beltrán",
+    email: "ricardo.beltran@example.com",
+    fuente: "otro",
+    presupuesto: 75,
+    fecha_creacion: daysAgo(18),
+  },
+  {
+    id: "ld_013",
+    nombre: "Mariana López",
+    email: "mariana.lopez@example.com",
+    telefono: "+57 310 101 1010",
+    fuente: "landing_page",
+    producto_interes: "Webinar de ventas",
+    presupuesto: 200,
+    fecha_creacion: daysAgo(22),
+  },
+  {
+    id: "ld_014",
+    nombre: "Sebastián Ortiz",
+    email: "sebastian.ortiz@example.com",
+    fuente: "facebook",
+    producto_interes: "Mentoría 1:1",
+    presupuesto: 1500,
+    fecha_creacion: daysAgo(25),
+  },
+  {
+    id: "ld_015",
+    nombre: "Isabella Hernández",
+    email: "isabella.hernandez@example.com",
+    telefono: "+57 319 222 3344",
+    fuente: "referido",
+    producto_interes: "Consultoría de marca",
+    presupuesto: 2800,
+    fecha_creacion: daysAgo(30),
+  },
+  {
+    id: "ld_016",
+    nombre: "Juan Pablo Castro",
+    email: "juanpablo.castro@example.com",
+    fuente: "instagram",
+    producto_interes: "Plantillas premium",
+    presupuesto: 95,
+    fecha_creacion: daysAgo(35),
+  },
+];
