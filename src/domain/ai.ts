@@ -22,6 +22,13 @@ export interface AiSummary {
   analysis: string;
   topSource: LeadSource | null;
   recommendations: string[];
+  /**
+   * Populated only when `OPENAI_API_KEY` was configured on the server but
+   * the OpenAI call failed and we fell back to the heuristic. Surfacing it
+   * lets the UI warn the operator so they can fix the key / billing /
+   * model, instead of silently degrading.
+   */
+  warning?: string;
 }
 
 export interface AiSummaryFilters {

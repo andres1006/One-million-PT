@@ -4,6 +4,10 @@ import { z } from "zod";
 import { LEAD_SOURCES, type LeadSource } from "@/domain/lead";
 import type { AiSummary, AiSummaryDataset } from "@/domain/ai";
 import { generateHeuristicSummary } from "@/application/ai/heuristic-summary";
+import {
+  callOpenAi,
+  type OpenAiOutcome,
+} from "@/infrastructure/ai/openai-client";
 
 function coerceTopSource(value: unknown): LeadSource | null {
   if (typeof value !== "string") return null;
@@ -16,9 +20,11 @@ function coerceTopSource(value: unknown): LeadSource | null {
  * Next API route that produces an AI summary.
  *
  * The route always returns a well-formed `AiSummary`. If `OPENAI_API_KEY`
- * is configured it tries OpenAI first, and silently falls back to the
- * deterministic heuristic if the call fails (so a broken network or a
- * rate-limited key never surfaces as a 500 to the user).
+ * is configured it tries OpenAI first, and falls back to the deterministic
+ * heuristic if the call fails. When a fallback happens **with a key
+ * configured**, the response includes a `warning` field so the UI can
+ * surface the reason (invalid key, rate limit, network, invalid JSON…)
+ * instead of silently degrading.
  *
  * The client sends the precomputed dataset and filters; the server never
  * needs access to the raw lead list. This keeps the route thin and makes
@@ -32,9 +38,7 @@ const bySourceSchema = z.object({
   landing_page: z.number().int().min(0),
   referido: z.number().int().min(0),
   otro: z.number().int().min(0),
-}) satisfies z.ZodType<
-  Record<(typeof LEAD_SOURCES)[number], number>
->;
+}) satisfies z.ZodType<Record<(typeof LEAD_SOURCES)[number], number>>;
 
 const datasetSchema = z.object({
   total: z.number().int().min(0),
@@ -60,87 +64,31 @@ const bodySchema = z.object({
   filters: filtersSchema,
 });
 
-async function tryOpenAI(
+function mapOutcomeToSummary(
+  outcome: OpenAiOutcome,
   dataset: AiSummaryDataset,
   filters: z.infer<typeof filtersSchema>,
-): Promise<AiSummary | null> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return null;
-
-  const prompt = [
-    "Eres un analista de marketing que trabaja con leads de una agencia.",
-    "Con base en el siguiente snapshot, genera un resumen ejecutivo en español.",
-    "Responde SÓLO con un objeto JSON válido con las claves:",
-    "- headline (string, máx 120 caracteres)",
-    "- analysis (string, 2-3 frases)",
-    "- topSource (una de: instagram, facebook, landing_page, referido, otro, o null)",
-    "- recommendations (array de 2-4 strings accionables)",
-    "",
-    `Filtros: ${JSON.stringify(filters)}`,
-    `Dataset: ${JSON.stringify(dataset)}`,
-  ].join("\n");
-
-  try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${apiKey}`,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
-        temperature: 0.3,
-        response_format: { type: "json_object" },
-        messages: [
-          {
-            role: "system",
-            content:
-              "You return strictly valid JSON matching the requested schema, in Spanish.",
-          },
-          { role: "user", content: prompt },
-        ],
-      }),
-    });
-
-    if (!res.ok) return null;
-    const json = (await res.json()) as {
-      choices?: Array<{ message?: { content?: string } }>;
-    };
-    const content = json.choices?.[0]?.message?.content;
-    if (!content) return null;
-
-    const parsed = JSON.parse(content) as Partial<AiSummary>;
-    if (
-      typeof parsed.headline !== "string" ||
-      typeof parsed.analysis !== "string" ||
-      !Array.isArray(parsed.recommendations)
-    ) {
-      return null;
-    }
-
-    const now = new Date();
-    return {
-      id: `ai_${now.getTime().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
-      generatedAt: now.toISOString(),
-      provider: "openai",
-      filters: {
-        source: filters.source as AiSummary["filters"]["source"],
-        from: filters.from,
-        to: filters.to,
-      },
-      dataset,
-      headline: parsed.headline,
-      analysis: parsed.analysis,
-      // Validate against known sources so a hallucinated label
-      // (e.g. "google_ads") doesn't break LEAD_SOURCE_LABEL lookups.
-      topSource: coerceTopSource(parsed.topSource),
-      recommendations: parsed.recommendations.filter(
-        (r): r is string => typeof r === "string" && r.trim().length > 0,
-      ),
-    };
-  } catch {
-    return null;
-  }
+): AiSummary | null {
+  if (outcome.status !== "ok") return null;
+  const parsed = outcome.parsed;
+  const now = new Date();
+  return {
+    id: `ai_${now.getTime().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+    generatedAt: now.toISOString(),
+    provider: "openai",
+    filters: {
+      source: filters.source as AiSummary["filters"]["source"],
+      from: filters.from,
+      to: filters.to,
+    },
+    dataset,
+    headline: parsed.headline,
+    analysis: parsed.analysis,
+    topSource: coerceTopSource(parsed.topSource),
+    recommendations: parsed.recommendations.filter(
+      (r): r is string => typeof r === "string" && r.trim().length > 0,
+    ),
+  };
 }
 
 export async function POST(request: Request) {
@@ -160,10 +108,30 @@ export async function POST(request: Request) {
     to: filters.to,
   };
 
-  const openAi = await tryOpenAI(dataset, filters);
-  if (openAi) return NextResponse.json(openAi);
+  const outcome = await callOpenAi({ dataset, filters });
+
+  if (outcome.status === "ok") {
+    const summary = mapOutcomeToSummary(outcome, dataset, filters);
+    if (summary) return NextResponse.json(summary);
+  }
+
+  // Fallback to heuristic. If OpenAI was attempted but failed, include the
+  // reason so the UI can surface a visible warning banner and the operator
+  // can inspect `Vercel → Function Logs` for the detailed error.
+  const fallbackReason = outcome.status === "ok" ? null : outcome.reason;
+
+  if (outcome.status !== "ok" && outcome.status !== "no_key") {
+    console.warn(
+      `[ai-summary] fallback to heuristic (${outcome.status}): ${fallbackReason}`,
+    );
+  }
+
+  const warning =
+    !fallbackReason || outcome.status === "no_key"
+      ? undefined
+      : `Fallback al modo heurístico: ${fallbackReason}. Revisa OPENAI_API_KEY en las variables de entorno del servidor.`;
 
   return NextResponse.json(
-    generateHeuristicSummary(dataset, typedFilters),
+    generateHeuristicSummary(dataset, typedFilters, new Date(), warning),
   );
 }
