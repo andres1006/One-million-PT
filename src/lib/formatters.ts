@@ -30,9 +30,21 @@ export function formatRelative(iso: string, now: Date = new Date()): string {
   const hour = 60 * minute;
   const day = 24 * hour;
 
+  // Future dates fall back to the absolute formatter to avoid returning
+  // misleading "hace unos segundos" for any negative diff.
+  if (diff < 0) return formatDate(iso);
   if (diff < minute) return "hace unos segundos";
-  if (diff < hour) return `hace ${Math.floor(diff / minute)} min`;
-  if (diff < day) return `hace ${Math.floor(diff / hour)} h`;
-  if (diff < 7 * day) return `hace ${Math.floor(diff / day)} días`;
+  if (diff < hour) {
+    const mins = Math.floor(diff / minute);
+    return `hace ${mins} ${mins === 1 ? "minuto" : "minutos"}`;
+  }
+  if (diff < day) {
+    const hours = Math.floor(diff / hour);
+    return `hace ${hours} ${hours === 1 ? "hora" : "horas"}`;
+  }
+  if (diff < 7 * day) {
+    const days = Math.floor(diff / day);
+    return `hace ${days} ${days === 1 ? "día" : "días"}`;
+  }
   return formatDate(iso);
 }
