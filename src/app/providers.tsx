@@ -7,6 +7,15 @@ import { ThemeProvider } from "next-themes";
 
 import { createQueryClient } from "@/lib/query-client";
 
+/**
+ * Opt-in MSW bootstrap.
+ *
+ * The app ships real Next.js route handlers under `/api/*` (see
+ * `src/app/api/leads` and `src/app/api/webhooks`), so by default the
+ * client talks to the server directly via React Query + fetch. MSW is
+ * kept as an optional offline mode (`NEXT_PUBLIC_MOCKS=on`) for local
+ * demos or when the server is intentionally unavailable.
+ */
 async function bootstrapMocks() {
   if (typeof window === "undefined") return;
   if (process.env.NEXT_PUBLIC_MOCKS !== "on") return;

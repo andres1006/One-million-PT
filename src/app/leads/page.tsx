@@ -14,7 +14,7 @@ export default function LeadsPage() {
           </h2>
           <p className="text-sm text-muted-foreground">
             Busca, filtra, edita o registra nuevos leads. Los cambios se
-            sincronizan con la API mock.
+            sincronizan con la API en <code>/api/leads</code> vía React Query.
           </p>
         </header>
 

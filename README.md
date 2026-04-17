@@ -13,7 +13,8 @@ Aplicación web **100% frontend** para administrar leads de **One Million Copy S
 | Estado remoto | TanStack Query con `keepPreviousData` |
 | Estado UI | Zustand (filtros + theme + historial IA con `persist`) |
 | Formularios | React Hook Form + Zod |
-| Mocks | MSW (service worker en navegador) |
+| API layer | Next.js Route Handlers (`/api/leads`, `/api/webhooks/*`) con store en memoria |
+| Mocks offline | MSW (opcional, `NEXT_PUBLIC_MOCKS=on`) |
 | Gráficas | Recharts (AreaChart y BarChart) |
 | Tests | Vitest + Testing Library + jsdom (50 tests) |
 | Linting | ESLint (config de Next) + Prettier + commitlint + husky |
@@ -126,22 +127,46 @@ Corre todo con:
 pnpm test
 ```
 
-## 🧪 Mocks (MSW)
+## 🔌 API layer
 
-Con `NEXT_PUBLIC_MOCKS=on` (default en `.env.example`), antes de montar la app se arranca un **Service Worker** que intercepta `/api/*` en el navegador y responde desde [`src/infrastructure/mocks/handlers.ts`](./src/infrastructure/mocks/handlers.ts) usando el seed de [`src/infrastructure/mocks/seed.ts`](./src/infrastructure/mocks/seed.ts) (16 leads).
+El cliente consume datos siempre vía **React Query + fetch** contra rutas reales de Next.js. El estado del servidor vive en dos singletons `globalThis` (persisten durante la vida del proceso y resisten HMR) que arrancan con el seed de 16 leads:
 
 | Método | Ruta | Descripción |
 |---|---|---|
 | `GET` | `/api/leads` | Listado paginado + filtros (`q`, `source`, `from`, `to`, `page`, `pageSize`, `sort`) |
 | `GET` | `/api/leads/stats` | Métricas agregadas + serie diaria de 14 días |
 | `GET` | `/api/leads/:id` | Detalle |
-| `POST` | `/api/leads` | Crea un lead (valida con Zod) |
-| `PATCH` | `/api/leads/:id` | Actualiza |
-| `DELETE` | `/api/leads/:id` | Elimina |
+| `POST` | `/api/leads` | Crea un lead (valida con Zod) → dispara `lead.created` |
+| `PATCH` | `/api/leads/:id` | Actualiza → dispara `lead.updated` |
+| `DELETE` | `/api/leads/:id` | Elimina → dispara `lead.deleted` |
+| `GET/POST` | `/api/webhooks` | Lista o crea un webhook de salida |
+| `GET/PATCH/DELETE` | `/api/webhooks/:id` | Detalle, edición o borrado |
+| `POST` | `/api/webhooks/:id/test` | Dispara un payload de prueba |
+| `GET` | `/api/webhooks/events` | Bitácora (últimas 200, limit configurable) |
+| `POST` | `/api/webhooks/inbound/:source` | Endpoint para recibir leads desde CRM/funnels |
+| `POST` | `/api/ai-summary` | Resumen ejecutivo (OpenAI ó heurístico) |
 
-> La única ruta **real** de servidor es `POST /api/ai-summary`. Vive en `src/app/api/ai-summary/route.ts` para poder usar la key de OpenAI sin exponerla al cliente.
+### Modo offline (MSW)
 
-Para desactivar MSW: `NEXT_PUBLIC_MOCKS=off`.
+Si necesitas levantar la app sin backend (por ejemplo, una demo sin conectividad), puedes activar MSW con `NEXT_PUBLIC_MOCKS=on`. El service worker intercepta `/api/leads/*` en el navegador y responde desde `src/infrastructure/mocks/handlers.ts`. **Por defecto está apagado** porque ahora hay API real.
+
+## 🔔 Automatizaciones / Webhooks
+
+La página `/automations` expone tres secciones:
+
+1. **Entrada** — endpoints públicos que tus funnels pueden llamar:
+   ```bash
+   curl -X POST http://localhost:3000/api/webhooks/inbound/instagram \
+     -H 'content-type: application/json' \
+     -d '{"name":"María","email":"maria@example.com","phone":"+57 300","budget":450}'
+   ```
+   El payload se normaliza (Zod), se crea un lead y se emiten los eventos `lead.inbound` + `lead.created`.
+
+2. **Salida** — webhooks registrados por el usuario. Cada vez que un lead cambia, la app hace fan-out a todos los webhooks habilitados suscritos al evento, firmando la request con `x-omc-signature` si hay secret. Cada envío tiene timeout propio (4s) y queda registrado con su HTTP status y mensaje.
+
+3. **Bitácora** — listado con polling cada 5s de las últimas 50 entregas (salientes y entrantes), con dirección, evento, estado, detalle y timestamp relativo.
+
+> Todo vive en memoria (ideal para la prueba técnica). Para producción, swap de `leads-store` / `webhooks-store` a una DB es un único archivo.
 
 ## 🤖 Resumen con IA
 
