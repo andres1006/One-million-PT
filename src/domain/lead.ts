@@ -58,4 +58,9 @@ export interface LeadStats {
   lastSevenDays: number;
   previousSevenDays: number;
   topSource: LeadSource | null;
+  /**
+   * Leads created per day for the last 14 days, ordered oldest → newest.
+   * Dates are ISO YYYY-MM-DD.
+   */
+  daily: Array<{ date: string; count: number }>;
 }
