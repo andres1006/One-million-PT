@@ -43,8 +43,20 @@ export const leadCreateSchema = z.object({
   presupuesto: optionalPositiveNumber,
 });
 
-export type LeadCreateInput = z.input<typeof leadCreateSchema>;
-export type LeadCreateOutput = z.output<typeof leadCreateSchema>;
+/**
+ * Types exposed to the rest of the app.
+ *
+ * - *FormValues* is the raw, pre-transform shape used by React Hook Form
+ *   (e.g. `presupuesto` may be a string from a number input).
+ * - *Input* is the post-transform, validated shape used by the repository and
+ *   transported over the wire (e.g. `presupuesto` is guaranteed `number`).
+ *
+ * Keeping both prevents untransformed form values from leaking into the API
+ * layer at compile time.
+ */
+export type LeadCreateFormValues = z.input<typeof leadCreateSchema>;
+export type LeadCreateInput = z.output<typeof leadCreateSchema>;
 
 export const leadUpdateSchema = leadCreateSchema.partial();
-export type LeadUpdateInput = z.input<typeof leadUpdateSchema>;
+export type LeadUpdateFormValues = z.input<typeof leadUpdateSchema>;
+export type LeadUpdateInput = z.output<typeof leadUpdateSchema>;
