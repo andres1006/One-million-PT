@@ -56,6 +56,7 @@ export function LeadsTable({
           <TableRow className="bg-muted/50">
             <TableHead>Nombre</TableHead>
             <TableHead>Email</TableHead>
+            <TableHead className="hidden lg:table-cell">Teléfono</TableHead>
             <TableHead>Fuente</TableHead>
             <TableHead className="hidden md:table-cell">Producto</TableHead>
             <TableHead className="text-right">Presupuesto</TableHead>
@@ -75,7 +76,7 @@ export function LeadsTable({
           {isLoading && rows.length === 0
             ? Array.from({ length: 6 }).map((_, i) => (
                 <TableRow key={`sk-${i}`}>
-                  {Array.from({ length: 7 }).map((__, j) => (
+                  {Array.from({ length: 8 }).map((__, j) => (
                     <TableCell key={j}>
                       <Skeleton className="h-4 w-full" />
                     </TableCell>
@@ -87,6 +88,9 @@ export function LeadsTable({
                   <TableCell className="font-medium">{lead.nombre}</TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground">
                     {lead.email}
+                  </TableCell>
+                  <TableCell className="hidden font-mono text-xs text-muted-foreground lg:table-cell">
+                    {lead.telefono ?? "—"}
                   </TableCell>
                   <TableCell>
                     <SourceBadge source={lead.fuente} />
@@ -132,7 +136,7 @@ export function LeadsTable({
               ))}
           {!isLoading && rows.length === 0 && (
             <TableRow>
-              <TableCell colSpan={7} className="p-0">
+              <TableCell colSpan={8} className="p-0">
                 <div className="flex flex-col items-center justify-center gap-1 py-16 text-center">
                   <p className="text-sm font-medium">
                     No hay leads que coincidan
