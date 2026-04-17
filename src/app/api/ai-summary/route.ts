@@ -1,9 +1,16 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { LEAD_SOURCES } from "@/domain/lead";
+import { LEAD_SOURCES, type LeadSource } from "@/domain/lead";
 import type { AiSummary, AiSummaryDataset } from "@/domain/ai";
 import { generateHeuristicSummary } from "@/application/ai/heuristic-summary";
+
+function coerceTopSource(value: unknown): LeadSource | null {
+  if (typeof value !== "string") return null;
+  return (LEAD_SOURCES as readonly string[]).includes(value)
+    ? (value as LeadSource)
+    : null;
+}
 
 /**
  * Next API route that produces an AI summary.
@@ -124,8 +131,9 @@ async function tryOpenAI(
       dataset,
       headline: parsed.headline,
       analysis: parsed.analysis,
-      topSource:
-        (parsed.topSource as AiSummary["topSource"]) ?? null,
+      // Validate against known sources so a hallucinated label
+      // (e.g. "google_ads") doesn't break LEAD_SOURCE_LABEL lookups.
+      topSource: coerceTopSource(parsed.topSource),
       recommendations: parsed.recommendations.filter(
         (r): r is string => typeof r === "string" && r.trim().length > 0,
       ),

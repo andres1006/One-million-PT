@@ -109,7 +109,10 @@ export function generateHeuristicSummary(
           .join(", ")}.`
       : "";
 
-  const analysis = [headline, wowText, sourceText, budgetText, topProductText]
+  // `headline` is rendered as the card description, so it is intentionally
+  // excluded from `analysis` here to avoid duplicating the same sentence
+  // in the UI (bug flagged by Devin Review on PR #4).
+  const analysis = [wowText, sourceText, budgetText, topProductText]
     .filter(Boolean)
     .join(" ");
 
